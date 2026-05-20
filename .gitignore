@@ -28,3 +28,9 @@ Thumbs.db
 *.svg
 *.gif
 *.ico
+
+# Local test / validation scripts
+test_liquid_ether_rendering.py
+test_customizer_features.py
+test_notes_workspace.py
+

@@ -6,51 +6,50 @@
 {% block content %}
 <div class="container" id="profile-view-container" style="max-width: 900px; margin: 0 auto; padding-top: 1rem;">
 
-    <!-- Profile Header with Ambient Glow -->
-    <header style="margin-bottom: 3rem; position: relative;">
-        <div
-            style="position: absolute; top: -50px; left: 50%; transform: translateX(-50%); width: 250px; height: 250px; background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(0,0,0,0) 70%); filter: blur(30px); z-index: -1;">
-        </div>
+    <!-- Cinematic Hero Background -->
+    <div style="position: absolute; top: 0; left: 0; right: 0; height: 300px; background: linear-gradient(180deg, rgba(239,35,60,0.08) 0%, transparent 100%); pointer-events: none; z-index: 0;"></div>
+    <div style="position: absolute; top: -100px; left: 50%; transform: translateX(-50%); width: 500px; height: 500px; background: radial-gradient(circle, rgba(239, 35, 60, 0.1) 0%, rgba(0,0,0,0) 70%); filter: blur(40px); z-index: 0; pointer-events: none;"></div>
 
-        <h1 class="hero-title" style="font-size: 2.75rem; text-align: center; margin-bottom: 0.5rem;"
+    <!-- Profile Header -->
+    <header style="margin-bottom: 2.5rem; position: relative; z-index: 1;">
+        <h1 class="hero-title" style="font-size: 2.5rem; text-align: center; margin-bottom: 0.5rem;"
             id="profile-title-main">
             Your Study <span>Sanctuary</span>
         </h1>
-        <p class="hero-subtitle" style="font-size: 1rem; text-align: center;" id="profile-subtitle-desc">
-            Monitor your subscription status, limits, and learning consistency streak.
+        <p class="hero-subtitle" style="font-size: 0.95rem; text-align: center; margin-bottom: 1.5rem;" id="profile-subtitle-desc">
+            Monitor your subscription, learning consistency, and account settings.
         </p>
+
     </header>
 
-    <div style="display: grid; grid-template-columns: 1fr; gap: 2rem;" id="profile-main-grid">
+    <div style="display: grid; grid-template-columns: 1fr; gap: 2rem; position: relative; z-index: 1;" id="profile-main-grid">
 
         <!-- Main Profile Info Card -->
         <div class="glass-card"
-            style="position: relative; overflow: hidden; padding: 2.5rem; display: flex; flex-direction: column; md:flex-direction: row; gap: 2.5rem; align-items: center;"
+            style="position: relative; overflow: hidden; padding: 2.5rem; display: flex; flex-direction: row; gap: 2.5rem; align-items: center; flex-wrap: wrap;"
             id="profile-card-details">
 
             <!-- Glow Accent -->
             <div
-                style="position: absolute; top: 0; right: 0; width: 150px; height: 150px; background: radial-gradient(circle, {% if profile.plan_type == 'ultra' %}rgba(236, 72, 153, 0.12){% elif profile.plan_type == 'pro' %}rgba(139, 92, 246, 0.12){% else %}rgba(255, 255, 255, 0.04){% endif %} 0%, rgba(0,0,0,0) 70%); pointer-events: none;">
+                style="position: absolute; top: 0; right: 0; width: 150px; height: 150px; background: radial-gradient(circle, {% if profile.plan_type == 'ultra' %}rgba(239, 35, 60, 0.12){% elif profile.plan_type == 'pro' %}rgba(239, 35, 60, 0.08){% else %}rgba(255, 255, 255, 0.04){% endif %} 0%, rgba(0,0,0,0) 70%); pointer-events: none;">
             </div>
 
-            <!-- Left Avatar & General Details -->
+            <!-- Left Avatar Block -->
             <div style="text-align: center; flex-shrink: 0;" id="profile-avatar-block">
-                {% if user.first_name %}
-                <!-- Premium Initials Avatar -->
-                <div
-                    style="width: 110px; height: 110px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%); color: #fff; font-size: 2.5rem; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; box-shadow: 0 8px 30px rgba(139, 92, 246, 0.4), 0 0 0 4px rgba(255, 255, 255, 0.05);">
-                    {{ user.first_name|slice:":1" }}{{ user.last_name|slice:":1"|default:"" }}
+                <!-- Animated Avatar Ring -->
+                <div class="avatar-ring">
+                    {% if user.first_name %}
+                    <div class="avatar-inner">
+                        {{ user.first_name|slice:":1" }}{{ user.last_name|slice:":1"|default:"" }}
+                    </div>
+                    {% else %}
+                    <div class="avatar-inner">
+                        {{ user.username|slice:":2"|upper }}
+                    </div>
+                    {% endif %}
                 </div>
-                {% else %}
-                <!-- Standard High Contrast Initial Avatar -->
-                <div
-                    style="width: 110px; height: 110px; border-radius: 50%; background: linear-gradient(135deg, #a78bfa 0%, #ec4899 100%); color: #fff; font-size: 2.5rem; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; box-shadow: 0 8px 30px rgba(167, 139, 250, 0.4), 0 0 0 4px rgba(255, 255, 255, 0.05);">
-                    {{ user.username|slice:":2"|upper }}
-                </div>
-                {% endif %}
 
-                <h2
-                    style="font-family: 'Outfit'; font-size: 1.5rem; color: var(--text-primary); margin-bottom: 0.25rem;">
+                <h2 style="font-family: 'Outfit'; font-size: 1.5rem; color: var(--text-primary); margin-bottom: 0.25rem;">
                     {{ user.first_name|default:user.username }} {{ user.last_name|default:"" }}
                 </h2>
                 <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
@@ -59,35 +58,27 @@
 
                 <!-- Streak Flame Tag -->
                 <div
-                    style="display: inline-flex; align-items: center; gap: 8px; background: rgba(249, 115, 22, 0.08); border: 1px solid rgba(249, 115, 22, 0.2); padding: 0.4rem 1rem; border-radius: 20px; color: #f97316; font-weight: 600; font-size: 0.8rem; box-shadow: 0 0 10px rgba(249, 115, 22, 0.05); animation: hoverFloat 3s infinite ease-in-out;">
-                    <!-- Burning Flame Icon -->
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    {{ profile.streak_count }} Day Study Streak
+                    style="display: inline-flex; align-items: center; gap: 8px; background: rgba(249, 115, 22, 0.08); border: 1px solid rgba(249, 115, 22, 0.2); padding: 0.4rem 1rem; border-radius: 20px; color: #f97316; font-weight: 600; font-size: 0.8rem; box-shadow: 0 0 10px rgba(249, 115, 22, 0.05); animation: float-gentle 3s infinite ease-in-out;">
+                    🔥 {{ profile.streak_count }} Day Study Streak
                 </div>
             </div>
 
-            <!-- Right Plan details and actions -->
-            <div style="flex: 1; display: flex; flex-direction: column; gap: 1.5rem;" id="profile-info-block">
+            <!-- Right Info Block -->
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 1.5rem; min-width: 280px;" id="profile-info-block">
 
                 <!-- Subscription details -->
                 <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 1.5rem;">
-                    <div
-                        style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+                    <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
                         Current Plan</div>
-
                     <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
                         {% if profile.plan_type == 'ultra' %}
                         <span
-                            style="background: linear-gradient(135deg, rgba(236, 72, 153, 0.25) 0%, rgba(6, 182, 212, 0.25) 100%); border: 1px solid rgba(236, 72, 153, 0.4); box-shadow: 0 0 15px rgba(236, 72, 153, 0.3); color: #fff; padding: 0.4rem 1.2rem; border-radius: 6px; font-weight: 700; font-family: 'Outfit'; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            style="background: linear-gradient(135deg, rgba(239, 35, 60, 0.25) 0%, rgba(217, 4, 41, 0.25) 100%); border: 1px solid rgba(239, 35, 60, 0.4); box-shadow: 0 0 15px rgba(239, 35, 60, 0.3); color: #fff; padding: 0.4rem 1.2rem; border-radius: 6px; font-weight: 700; font-family: 'Outfit'; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">
                             Ultra Plan
                         </span>
                         {% elif profile.plan_type == 'pro' %}
                         <span
-                            style="background: rgba(139, 92, 246, 0.25); border: 1px solid rgba(139, 92, 246, 0.4); box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); color: #fff; padding: 0.4rem 1.2rem; border-radius: 6px; font-weight: 700; font-family: 'Outfit'; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            style="background: rgba(239, 35, 60, 0.15); border: 1px solid rgba(239, 35, 60, 0.3); box-shadow: 0 0 15px rgba(239, 35, 60, 0.2); color: #fff; padding: 0.4rem 1.2rem; border-radius: 6px; font-weight: 700; font-family: 'Outfit'; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">
                             Pro Plan
                         </span>
                         {% else %}
@@ -96,10 +87,9 @@
                             Free Plan
                         </span>
                         {% endif %}
-
                         <div style="font-size: 0.85rem; color: var(--text-secondary);">
                             {% if profile.plan_type == 'free' %}
-                            Basic platform usage, ad-supported features.
+                            Basic platform usage
                             {% else %}
                             Active until <span style="font-weight: 600; color: var(--text-primary);">{% if profile.subscription_end_date %}{{ profile.subscription_end_date|date:"M d, Y" }}{% else %}Active (Ongoing){% endif %}</span>
                             {% endif %}
@@ -107,92 +97,147 @@
                     </div>
                 </div>
 
-                <!-- Usage Progress Bar (Course / Playlist Limits) -->
-                <div>
-                    <div
-                        style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.5rem;">
-                        <span
-                            style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Playlist
-                            Import Limit</span>
-                        <span style="color: var(--text-primary); font-weight: 600;">
-                            {{ playlist_count }} / {% if profile.plan_type == 'ultra' %}Unlimited{% else %}{{ playlist_limit }}{% endif %} Used
-                        </span>
-                    </div>
-
-                    <div
-                        style="width: 100%; height: 8px; background: rgba(255, 255, 255, 0.04); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.03);">
-                        {% if profile.plan_type == 'ultra' %}
-                        <div
-                            style="width: 100%; height: 100%; background: linear-gradient(90deg, #ec4899 0%, #06b6d4 100%); border-radius: 4px; box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);">
-                        </div>
-                        {% else %}
-                        <div
-                            style="width: {{ playlist_percentage }}%; height: 100%; background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 100%); border-radius: 4px; box-shadow: 0 0 10px rgba(139, 92, 246, 0.4); transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);">
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">
-                        {% if profile.plan_type == 'free' %}
-                        You are on the Free plan, which allows up to 3 distraction-free playlist imports. Upgrade to
-                        unlock 20 or unlimited playlists!
-                        {% elif profile.plan_type == 'pro' %}
-                        You are on the Pro plan, which allows up to 20 distraction-free playlist imports, AI study
-                        quizzes, and AI study planners.
-                        {% else %}
-                        You are on the Ultra plan! Enjoy unlimited playlist imports, AI study quizzes, AI study
-                        planners, and prioritized AI Tutor chatbots.
-                        {% endif %}
-                    </p>
-                </div>
-
-                <!-- Action Button Block -->
-                <div style="display: flex; gap: 12px; margin-top: 0.5rem; flex-wrap: wrap;">
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                     {% if profile.plan_type == 'free' %}
                     <a href="{% url 'pricing' %}" class="btn btn-primary"
-                        style="padding: 0.65rem 1.5rem; font-size: 0.85rem; box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);">
+                        style="padding: 0.65rem 1.5rem; font-size: 0.85rem;">
                         Upgrade Plan &rarr;
                     </a>
                     {% elif profile.plan_type == 'pro' %}
                     <a href="{% url 'pricing' %}" class="btn btn-primary"
-                        style="padding: 0.65rem 1.5rem; font-size: 0.85rem; background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%); border-color: #ec4899; box-shadow: 0 4px 20px rgba(236, 72, 153, 0.3);">
+                        style="padding: 0.65rem 1.5rem; font-size: 0.85rem;">
                         Upgrade to Ultra
                     </a>
                     {% else %}
                     <div
                         style="font-size: 0.8rem; color: #10b981; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); padding: 0.5rem 1rem; border-radius: 6px;">
-                        <span
-                            style="width: 6px; height: 6px; background: #10b981; border-radius: 50%; display: inline-block;"></span>
-                        You have unlocked maximum EduTech AI privileges!
+                        <span style="width: 6px; height: 6px; background: #10b981; border-radius: 50%; display: inline-block;"></span>
+                        Maximum EduTech AI privileges unlocked!
                     </div>
                     {% endif %}
-
                     <a href="{% url 'dashboard' %}" class="btn btn-secondary"
                         style="padding: 0.65rem 1.5rem; font-size: 0.85rem;">
-                        Back to Study Dashboard
+                        Back to Dashboard
                     </a>
                 </div>
             </div>
+        </div>
 
+        <!-- Multi-Tab Section -->
+        <div class="glass-card" style="padding: 2rem;" id="profile-tabs-container">
+            <div class="profile-tabs" id="profile-tab-bar">
+                <button class="profile-tab-btn active" onclick="switchProfileTab('subscription', this)">📋 Subscription</button>
+                <button class="profile-tab-btn" onclick="switchProfileTab('usage', this)">📊 Usage Limits</button>
+                <button class="profile-tab-btn" onclick="switchProfileTab('history', this)">📈 Study Stats</button>
+            </div>
+
+            <!-- Tab 1: Subscription -->
+            <div class="profile-tab-content active" id="tab-subscription">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem;">
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 1.25rem; text-align: center;">
+                        <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">📚</div>
+                        <div style="font-size: 1.5rem; font-family: 'Outfit'; font-weight: 700; color: #fff;">{{ total_courses }}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Active Courses</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 1.25rem; text-align: center;">
+                        <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">🏆</div>
+                        <div style="font-size: 1.5rem; font-family: 'Outfit'; font-weight: 700; color: #10b981;">{{ completed_courses }}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Mastered</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 1.25rem; text-align: center;">
+                        <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">🔥</div>
+                        <div style="font-size: 1.5rem; font-family: 'Outfit'; font-weight: 700; color: #f97316;">{{ profile.streak_count }}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Day Streak</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Usage Limits -->
+            <div class="profile-tab-content" id="tab-usage">
+                <div style="margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.5rem;">
+                        <span style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Playlist Import Limit</span>
+                        <span style="color: var(--text-primary); font-weight: 600;">
+                            {{ playlist_count }} / {% if profile.plan_type == 'ultra' %}Unlimited{% else %}{{ playlist_limit }}{% endif %} Used
+                        </span>
+                    </div>
+                    <div style="width: 100%; height: 8px; background: rgba(255, 255, 255, 0.04); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.03);">
+                        {% if profile.plan_type == 'ultra' %}
+                        <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #ef233c, #d90429); border-radius: 4px; box-shadow: 0 0 10px rgba(239, 35, 60, 0.5);"></div>
+                        {% else %}
+                        <div style="width: {{ playlist_percentage }}%; height: 100%; background: linear-gradient(90deg, #ef233c, #d90429); border-radius: 4px; box-shadow: 0 0 10px rgba(239, 35, 60, 0.4); transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);"></div>
+                        {% endif %}
+                    </div>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">
+                        {% if profile.plan_type == 'free' %}
+                        Free plan allows up to 3 playlist imports. Upgrade to unlock 20 or unlimited!
+                        {% elif profile.plan_type == 'pro' %}
+                        Pro plan allows up to 20 playlist imports, AI quizzes, and planners.
+                        {% else %}
+                        Ultra plan — unlimited imports, AI quizzes, planners, and priority AI Tutor!
+                        {% endif %}
+                    </p>
+                </div>
+
+                <!-- Feature Comparison -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-top: 1rem;">
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 0.75rem; text-align: center; font-size: 0.7rem;">
+                        <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem;">Free</div>
+                        <div style="color: var(--text-muted);">3 playlists</div>
+                    </div>
+                    <div style="background: rgba(239,35,60,0.05); border: 1px solid rgba(239,35,60,0.15); border-radius: 10px; padding: 0.75rem; text-align: center; font-size: 0.7rem;">
+                        <div style="font-weight: 700; color: #ef233c; margin-bottom: 0.25rem;">Pro</div>
+                        <div style="color: var(--text-muted);">20 playlists + AI</div>
+                    </div>
+                    <div style="background: rgba(212,175,55,0.05); border: 1px solid rgba(212,175,55,0.15); border-radius: 10px; padding: 0.75rem; text-align: center; font-size: 0.7rem;">
+                        <div style="font-weight: 700; color: #d4af37; margin-bottom: 0.25rem;">Ultra</div>
+                        <div style="color: var(--text-muted);">Unlimited + Priority</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Study Stats -->
+            <div class="profile-tab-content" id="tab-history">
+                <div style="text-align: center; padding: 2rem 1rem;">
+                    <div style="font-size: 2.5rem; margin-bottom: 1rem; animation: float-gentle 3s ease-in-out infinite;">📊</div>
+                    <h3 style="font-family: 'Outfit'; font-size: 1.1rem; color: var(--text-primary); margin-bottom: 0.5rem;">Study Analytics</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; max-width: 400px; margin: 0 auto; line-height: 1.5;">
+                        Your detailed study analytics and focus time charts will appear here as you continue learning. Keep building your streak!
+                    </p>
+                    <!-- Mini Stats Bar Chart -->
+                    <div style="display: flex; align-items: flex-end; justify-content: center; gap: 8px; height: 80px; margin-top: 1.5rem;">
+                        <div style="width: 12px; height: 20%; background: rgba(239,35,60,0.3); border-radius: 4px 4px 0 0; transition: height 0.5s;"></div>
+                        <div style="width: 12px; height: 40%; background: rgba(239,35,60,0.4); border-radius: 4px 4px 0 0; transition: height 0.5s;"></div>
+                        <div style="width: 12px; height: 65%; background: rgba(239,35,60,0.5); border-radius: 4px 4px 0 0; transition: height 0.5s;"></div>
+                        <div style="width: 12px; height: 45%; background: rgba(239,35,60,0.45); border-radius: 4px 4px 0 0; transition: height 0.5s;"></div>
+                        <div style="width: 12px; height: 80%; background: rgba(239,35,60,0.6); border-radius: 4px 4px 0 0; transition: height 0.5s;"></div>
+                        <div style="width: 12px; height: 55%; background: rgba(239,35,60,0.5); border-radius: 4px 4px 0 0; transition: height 0.5s;"></div>
+                        <div style="width: 12px; height: 90%; background: linear-gradient(180deg, #ef233c, #d90429); border-radius: 4px 4px 0 0; box-shadow: 0 0 10px rgba(239,35,60,0.4); transition: height 0.5s;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: center; gap: 8px; margin-top: 0.5rem;">
+                        <span style="font-size: 0.6rem; color: var(--text-muted); width: 12px; text-align: center;">M</span>
+                        <span style="font-size: 0.6rem; color: var(--text-muted); width: 12px; text-align: center;">T</span>
+                        <span style="font-size: 0.6rem; color: var(--text-muted); width: 12px; text-align: center;">W</span>
+                        <span style="font-size: 0.6rem; color: var(--text-muted); width: 12px; text-align: center;">T</span>
+                        <span style="font-size: 0.6rem; color: var(--text-muted); width: 12px; text-align: center;">F</span>
+                        <span style="font-size: 0.6rem; color: var(--text-muted); width: 12px; text-align: center;">S</span>
+                        <span style="font-size: 0.6rem; color: #ef233c; width: 12px; text-align: center; font-weight: 700;">S</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
-
 </div>
 
-<style>
-    @keyframes hoverFloat {
-        0% {
-            transform: translateY(0);
-        }
-
-        50% {
-            transform: translateY(-4px);
-        }
-
-        100% {
-            transform: translateY(0);
-        }
+<script>
+    // Profile Tab Switching
+    function switchProfileTab(tabId, btn) {
+        document.querySelectorAll('.profile-tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.profile-tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + tabId).classList.add('active');
+        btn.classList.add('active');
     }
-</style>
+</script>
 {% endblock %}

@@ -4,266 +4,459 @@
 {% block title %}EduTech AI — Learner Dashboard{% endblock %}
 
 {% block content %}
-<!-- ===== AMBIENT BACKGROUND ORBS ===== -->
+<!-- ===== AMBIENT ORB LAYER (Z-1) ===== -->
 <div class="dash-ambient-orbs" aria-hidden="true">
     <div class="dash-orb dash-orb-1"></div>
     <div class="dash-orb dash-orb-2"></div>
     <div class="dash-orb dash-orb-3"></div>
 </div>
 
-<div class="dashboard-container">
+<!-- ===== CANVAS PARTICLE SYSTEM (Z-0) ===== -->
+<canvas id="dash-particle-canvas" class="dash-particle-canvas" aria-hidden="true"></canvas>
 
-    <!-- ===== HEADER: Welcome + Actions ===== -->
-    <header class="dash-header">
-        <div class="dash-header-greeting">
-            <h1>Welcome back, {{ user.first_name|default:user.username }}</h1>
-            <p>
-                {% if profile.plan_type == 'ultra' %}
-                ✦ Ultra Member ·
-                {% elif profile.plan_type == 'pro' %}
-                Pro Member ·
-                {% else %}
-                Free Plan ·
-                {% endif %}
-                Keep up the momentum
-            </p>
-        </div>
-        <div class="dash-header-actions">
-            <div class="dash-data-freshness">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    aria-hidden="true">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 6v6l4 2" />
-                </svg>
-                Updated <time datetime="{{ last_updated|date:'c' }}">{{ last_updated|date:'H:i' }}</time>
+<div class="dashboard-container" id="widget-sortable">
+
+    <!-- ===== WIDGET: HEADER ===== -->
+    <section class="dash-widget" data-widget-id="header">
+        <header class="dash-header">
+            <div class="dash-header-greeting">
+                <h1>Welcome back, {{ user.first_name|default:user.username }}</h1>
+                <p>
+                    {% if profile.plan_type == 'ultra' %}
+                    ✦ Ultra Member ·
+                    {% elif profile.plan_type == 'pro' %}
+                    Pro Member ·
+                    {% else %}
+                    Free Plan ·
+                    {% endif %}
+                    Keep up the momentum
+                </p>
             </div>
-            <a href="{% url 'import_course' %}" class="dash-btn-import">
-                + Import Playlist
-            </a>
-        </div>
-    </header>
-
-    <!-- ===== KPI ROW: 4 Key Metrics ===== -->
-    <section class="dash-kpi-row" aria-label="Key performance indicators">
-        <!-- Streak -->
-        <div class="dash-kpi-card kpi-streak" tabindex="0" aria-label="Study streak: {{ profile.streak_count }} days">
-            <div class="dash-kpi-icon">🔥</div>
-            <div class="dash-kpi-value">{{ profile.streak_count }}</div>
-            <div class="dash-kpi-label">Day Streak</div>
-            {% if profile.streak_count > 0 %}
-            <span class="dash-kpi-trend up">Keep going</span>
-            {% endif %}
-        </div>
-
-        <!-- Active Courses -->
-        <div class="dash-kpi-card kpi-courses" tabindex="0" aria-label="Active courses: {{ total_courses }}">
-            <div class="dash-kpi-icon">📚</div>
-            <div class="dash-kpi-value">{{ total_courses }}</div>
-            <div class="dash-kpi-label">Active Courses</div>
-        </div>
-
-        <!-- Weekly Hours -->
-        <div class="dash-kpi-card kpi-hours{% if weekly_goal_pct < 50 %} kpi-warning{% elif weekly_goal_pct < 25 %} kpi-danger{% endif %}"
-            tabindex="0" aria-label="Weekly study: {{ weekly_hours }} hours, {{ weekly_goal_pct }}% of goal">
-            <div class="dash-kpi-icon">⏱️</div>
-            <div class="dash-kpi-value">{{ weekly_hours }}<span class="dash-kpi-unit">h</span></div>
-            <div class="dash-kpi-label">This Week</div>
-            <span class="dash-kpi-trend {% if weekly_goal_pct >= 70 %}up{% elif weekly_goal_pct < 40 %}down{% endif %}">
-                {{ weekly_goal_pct }}% of {{ weekly_goal_hours }}h goal
-            </span>
-            {% if sparkline_data %}
-            <div class="dash-kpi-sparkline">
-                <svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true">
-                    <polyline
-                        points="{% for d in sparkline_data %}{{ forloop.counter0|add:forloop.counter0|add:5 }},{{ d.minutes|default:0|add:1|floatformat:'0'|add:'-1'|cut:'--' }}{% if not forloop.last %} {% endif %}{% endfor %}"
-                        style="fill:none;stroke:#3b82f6;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" />
-                </svg>
+            <div class="dash-header-actions">
+                <div class="dash-data-freshness">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        aria-hidden="true">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 6v6l4 2" />
+                    </svg>
+                    Updated <time datetime="{{ last_updated|date:'c' }}">{{ last_updated|date:'H:i' }}</time>
+                </div>
+                <a href="{% url 'import_course' %}" class="dash-btn-import">
+                    + Import Playlist
+                </a>
             </div>
-            {% endif %}
-        </div>
+        </header>
+    </section>
 
-        <!-- Completed -->
-        <div class="dash-kpi-card kpi-completed" tabindex="0" aria-label="Courses mastered: {{ completed_courses }}">
-            <div class="dash-kpi-icon">🏆</div>
-            <div class="dash-kpi-value">{{ completed_courses }}</div>
-            <div class="dash-kpi-label">Mastered</div>
-            {% if total_completed_videos > 0 %}
-            <span class="dash-kpi-trend up">{{ total_completed_videos }} videos done</span>
-            {% endif %}
+    <!-- ===== WIDGET: KPI ROW ===== -->
+    <section class="dash-widget" data-widget-id="kpi-row" aria-label="Key performance indicators">
+        <div class="dash-widget-header-v4">
+            <span class="dash-widget-drag-handle" aria-hidden="true">⠿</span>
+            <h2 class="dash-widget-title">Performance</h2>
+            <button class="dash-widget-collapse" aria-label="Collapse section"
+                onclick="this.closest('.dash-widget').classList.toggle('collapsed')">−</button>
+        </div>
+        <div class="dash-widget-body">
+            <div class="dash-kpi-row">
+                <!-- Streak -->
+                <div class="dash-kpi-card kpi-streak" tabindex="0"
+                    aria-label="Study streak: {{ profile.streak_count }} days"
+                    data-kpi-value="{{ profile.streak_count }}">
+                    <div class="dash-kpi-icon">🔥</div>
+                    <div class="dash-kpi-value" data-count="{{ profile.streak_count }}">{{ profile.streak_count }}</div>
+                    <div class="dash-kpi-label">Day Streak</div>
+                    {% if profile.streak_count > 0 %}
+                    <span class="dash-kpi-trend up">Keep going</span>
+                    {% endif %}
+                </div>
+                <!-- Active Courses -->
+                <div class="dash-kpi-card kpi-courses" tabindex="0" aria-label="Active courses: {{ total_courses }}"
+                    data-kpi-value="{{ total_courses }}">
+                    <div class="dash-kpi-icon">📚</div>
+                    <div class="dash-kpi-value" data-count="{{ total_courses }}">{{ total_courses }}</div>
+                    <div class="dash-kpi-label">Active Courses</div>
+                </div>
+                <!-- Weekly Hours -->
+                <div class="dash-kpi-card kpi-hours{% if weekly_goal_pct < 50 %} kpi-warning{% elif weekly_goal_pct < 25 %} kpi-danger{% endif %}"
+                    tabindex="0" aria-label="Weekly study: {{ weekly_hours }} hours, {{ weekly_goal_pct }}% of goal"
+                    data-kpi-value="{{ weekly_hours }}">
+                    <div class="dash-kpi-icon">⏱️</div>
+                    <div class="dash-kpi-value" data-count="{{ weekly_hours }}" data-decimals="1">{{ weekly_hours
+                        }}<span class="dash-kpi-unit">h</span></div>
+                    <div class="dash-kpi-label">This Week</div>
+                    <span
+                        class="dash-kpi-trend {% if weekly_goal_pct >= 70 %}up{% elif weekly_goal_pct < 40 %}down{% endif %}">
+                        {{ weekly_goal_pct }}% of {{ weekly_goal_hours }}h goal
+                    </span>
+                    {% if sparkline_data %}
+                    <div class="dash-kpi-sparkline">
+                        <svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true">
+                            <defs>
+                                <linearGradient id="sparkGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.5" />
+                                    <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.02" />
+                                </linearGradient>
+                            </defs>
+                            {% if sparkline_data %}
+                            <path
+                                d="{% for d in sparkline_data %}{% if forloop.first %}M{% else %}L{% endif %}{{ forloop.counter0|add:forloop.counter0|add:5 }},{{ 20|add:d.minutes|default:0|floatformat:'0'|add:'-1'|cut:'--' }}{% endfor %}"
+                                fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                            {% endif %}
+                            {% for d in sparkline_data %}
+                            {% if forloop.last %}<circle cx="{{ forloop.counter0|add:forloop.counter0|add:5 }}"
+                                cy="{{ 20|add:d.minutes|default:0|floatformat:'0'|add:'-1'|cut:'--' }}" r="3"
+                                fill="#60a5fa">
+                                <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite" />
+                            </circle>{% endif %}
+                            {% endfor %}
+                        </svg>
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- Completed -->
+                <div class="dash-kpi-card kpi-completed" tabindex="0"
+                    aria-label="Courses mastered: {{ completed_courses }}" data-kpi-value="{{ completed_courses }}">
+                    <div class="dash-kpi-icon">🏆</div>
+                    <div class="dash-kpi-value" data-count="{{ completed_courses }}">{{ completed_courses }}</div>
+                    <div class="dash-kpi-label">Mastered</div>
+                    {% if total_completed_videos > 0 %}
+                    <span class="dash-kpi-trend up">{{ total_completed_videos }} videos done</span>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- ===== CONTEXTUAL INSIGHT BAR ===== -->
+    <!-- ===== WIDGET: INSIGHT BAR ===== -->
     {% if insight %}
-    <div class="dash-insight-bar insight-{{ insight.type }}" role="alert" aria-live="polite">
-        <span class="dash-insight-icon" aria-hidden="true">{{ insight.icon }}</span>
-        <div class="dash-insight-content">
-            <p class="dash-insight-title">{{ insight.title }}</p>
-            <p class="dash-insight-message">{{ insight.message }}</p>
+    <section class="dash-widget" data-widget-id="insight">
+        <div class="dash-insight-bar insight-{{ insight.type }}" role="alert" aria-live="polite">
+            <span class="dash-insight-icon" aria-hidden="true">{{ insight.icon }}</span>
+            <div class="dash-insight-content">
+                <p class="dash-insight-title">{{ insight.title }}</p>
+                <p class="dash-insight-message">{{ insight.message }}</p>
+            </div>
+            {% if insight.cta_url %}
+            <a href="{{ insight.cta_url }}" class="dash-insight-cta">{{ insight.cta_label }}</a>
+            {% endif %}
         </div>
-        {% if insight.cta_url %}
-        <a href="{{ insight.cta_url }}" class="dash-insight-cta">{{ insight.cta_label }}</a>
-        {% endif %}
-    </div>
+    </section>
     {% endif %}
 
-    <!-- ===== FILTER & SORT BAR ===== -->
-    <div class="dash-filter-bar">
-        <span class="dash-filter-label">Filter:</span>
-        <select class="dash-filter-select" id="dash-filter-status" hx-get="{% url 'dashboard_courses_partial' %}"
-            hx-target="#course-list-container" hx-trigger="change" hx-swap="innerHTML transition:true" name="filter"
-            aria-label="Filter courses by status">
-            <option value="all">All Courses</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="exam_ready">Exam Ready</option>
-        </select>
-
-        <span class="dash-filter-label">Sort:</span>
-        <select class="dash-filter-select" id="dash-filter-sort" hx-get="{% url 'dashboard_courses_partial' %}"
-            hx-target="#course-list-container" hx-trigger="change" hx-swap="innerHTML transition:true" name="sort"
-            aria-label="Sort courses">
-            <option value="recent">Most Recent</option>
-            <option value="progress_desc">Highest Progress</option>
-            <option value="progress_asc">Lowest Progress</option>
-            <option value="alphabetical">Alphabetical</option>
-        </select>
-
-        <span class="dash-filter-count">
-            {{ courses.count }} course{{ courses.count|pluralize }}
-        </span>
-    </div>
-
-    <!-- ===== COURSE CARDS GRID ===== -->
-    <div class="dash-course-grid" id="course-list-container">
-        {% if courses %}
-        {% for course in courses %}
-        <div class="dash-course-card glass-card" id="course-card-{{ course.id }}">
-            <!-- Thumbnail -->
-            <div class="dash-card-thumb-wrapper">
-                {% if course.thumbnail_url %}
-                <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" class="dash-card-thumb" loading="lazy">
-                {% else %}
-                <div class="dash-card-thumb-placeholder" aria-hidden="true">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.5">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                    </svg>
-                </div>
-                {% endif %}
-                {% if course.video_count > 0 and course.completed_video_count == course.video_count %}
-                <span class="dash-badge-complete">✓ Complete</span>
-                {% endif %}
+    <!-- ===== WIDGET: RECOMMENDED COURSES RIBBON ===== -->
+    {% if recommended_courses %}
+    <section class="dash-widget" data-widget-id="recommended">
+        <div class="dash-recommended-section">
+            <div class="dash-recommended-header">
+                <h3>✨ Recommended For You</h3>
+                <span class="dash-recommended-subtitle">AI-prioritized based on your progress</span>
             </div>
-
-            <!-- Card Body -->
-            <div class="dash-card-body">
-                <div>
-                    <h3 class="dash-card-title">{{ course.title }}</h3>
-
-                    <div class="dash-card-meta">
-                        <span class="dash-meta-tag">🎥 {{ course.video_count }} videos</span>
-                        <span class="dash-meta-tag">⏱️ {{ course.total_duration_display }}</span>
-                        <span class="dash-meta-tag dash-meta-target">🎯 {{ course.target_days }}d plan</span>
+            <div class="dash-recommended-cards">
+                {% for rc in recommended_courses %}
+                <div class="dash-recommended-card" id="rec-card-{{ rc.id }}">
+                    <span class="dash-rec-badge">Recommended</span>
+                    <h4 class="dash-rec-title">{{ rc.title }}</h4>
+                    <div class="dash-rec-meta">
+                        <span>🎥 {{ rc.video_count }} videos</span>
+                        <span>📊 {% if rc.video_count > 0 %}{% widthratio rc.completed_video_count rc.video_count 100
+                            %}{% else %}0{% endif %}% done</span>
                     </div>
-
-                    <!-- Progress -->
-                    <div class="dash-progress-section">
-                        <div class="dash-progress-header">
-                            <span class="dash-progress-label">Progress</span>
-                            <span
-                                class="dash-progress-pct{% if course.video_count > 0 and course.completed_video_count == course.video_count %} dash-progress-done{% endif %}">
-                                {% if course.video_count > 0 %}{% widthratio course.completed_video_count
-                                course.video_count 100 %}{% else %}0{% endif %}%
-                            </span>
-                        </div>
-                        <div class="dash-progress-bar" role="progressbar"
-                            aria-valuenow="{% if course.video_count > 0 %}{% widthratio course.completed_video_count course.video_count 100 %}{% else %}0{% endif %}"
-                            aria-valuemin="0" aria-valuemax="100" aria-label="Course progress">
-                            <div class="dash-progress-fill{% if course.video_count > 0 and course.completed_video_count == course.video_count %} dash-progress-fill-done{% endif %}"
-                                style="width: {% if course.video_count > 0 %}{% widthratio course.completed_video_count course.video_count 100 %}{% else %}0{% endif %}%;">
-                            </div>
-                        </div>
-                        <div class="dash-progress-detail">
-                            <span>{{ course.completed_video_count }}/{{ course.video_count }} videos completed</span>
-                        </div>
-                    </div>
+                    <a href="{% url 'learn_view' rc.id %}" class="dash-rec-cta">Continue →</a>
                 </div>
-
-                <!-- Actions -->
-                <div class="dash-card-actions">
-                    <a href="{% url 'learn_view' course.id %}" class="dash-btn-learn"
-                        aria-label="Continue learning {{ course.title }}">
-                        Continue Learning
-                    </a>
-                    {% if course.video_count > 0 and course.completed_video_count == course.video_count %}
-                    {% if course.passed_exam %}
-                    <a href="{% url 'certificate' course.id %}" class="dash-btn-cert"
-                        aria-label="View certificate for {{ course.title }}">
-                        🏅 Certificate
-                    </a>
-                    {% else %}
-                    <a href="{% url 'final_exam' course.id %}" class="dash-btn-exam"
-                        aria-label="Take final exam for {{ course.title }}">
-                        📝 Final Exam
-                    </a>
-                    {% endif %}
-                    {% endif %}
-                </div>
+                {% endfor %}
             </div>
         </div>
-        {% endfor %}
-        {% else %}
-        <!-- Empty State -->
-        <div class="dash-empty-state">
-            <div class="dash-empty-icon" aria-hidden="true">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+    </section>
+    {% endif %}
+
+    <!-- ===== WIDGET: FILTER & SEARCH BAR ===== -->
+    <section class="dash-widget" data-widget-id="filter-bar">
+        <div class="dash-filter-bar-v4">
+            <!-- Faceted chip filters -->
+            <div class="dash-filter-chips" role="group" aria-label="Filter courses by status">
+                <button class="dash-chip active" data-filter="all" hx-get="{% url 'dashboard_courses_partial' %}"
+                    hx-target="#course-list-container" hx-swap="innerHTML transition:true"
+                    hx-include="#dash-filter-sort, #dash-search-input" name="filter" value="all">All</button>
+                <button class="dash-chip" data-filter="in_progress" hx-get="{% url 'dashboard_courses_partial' %}"
+                    hx-target="#course-list-container" hx-swap="innerHTML transition:true"
+                    hx-include="#dash-filter-sort, #dash-search-input" name="filter" value="in_progress">In
+                    Progress</button>
+                <button class="dash-chip" data-filter="completed" hx-get="{% url 'dashboard_courses_partial' %}"
+                    hx-target="#course-list-container" hx-swap="innerHTML transition:true"
+                    hx-include="#dash-filter-sort, #dash-search-input" name="filter"
+                    value="completed">Completed</button>
+                <button class="dash-chip" data-filter="exam_ready" hx-get="{% url 'dashboard_courses_partial' %}"
+                    hx-target="#course-list-container" hx-swap="innerHTML transition:true"
+                    hx-include="#dash-filter-sort, #dash-search-input" name="filter" value="exam_ready">Exam
+                    Ready</button>
+            </div>
+            <!-- Search input -->
+            <div class="dash-search-wrapper">
+                <svg class="dash-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.35-4.35" />
                 </svg>
+                <input type="search" class="dash-search-input" id="dash-search-input" placeholder="Search courses..."
+                    hx-get="{% url 'dashboard_courses_partial' %}" hx-target="#course-list-container"
+                    hx-trigger="keyup changed delay:300ms" hx-swap="innerHTML transition:true"
+                    hx-include="#dash-filter-chips input:checked, #dash-filter-sort" name="search"
+                    aria-label="Search courses">
             </div>
-            <h3>Your Study Desk is Empty</h3>
-            <p>Ready to lock into hyper-focus? Import any public YouTube playlist URL to transform it into a structured,
-                distraction-free course.</p>
-            <a href="{% url 'import_course' %}" class="dash-btn-import">Import Your First
-                Playlist</a>
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- ===== 28-DAY ACTIVITY HEATMAP ===== -->
-    <section class="dash-heatmap-section" aria-label="28-day activity heatmap">
-        <div class="dash-heatmap-header">
-            <h3 class="dash-heatmap-title">📅 Last 4 Weeks Activity</h3>
-            <div class="dash-heatmap-score">
-                {{ profile.streak_count }} <span>day streak</span>
-            </div>
-        </div>
-
-        <!-- Colorblind-safe heatmap grid -->
-        <div class="dash-streak-grid-v2">
-            {% for day in streak_grid %}
-            <div class="dash-streak-cell level-{{ day.level }}" tabindex="0" role="img"
-                aria-label="{{ day.label }}: {{ day.actions }} study event{{ day.actions|pluralize }}">
-                <span class="dash-streak-tooltip">{{ day.actions }} event{{ day.actions|pluralize }} on {{ day.label
-                    }}</span>
-            </div>
-            {% endfor %}
-        </div>
-
-        <!-- Legend -->
-        <div class="dash-heatmap-legend">
-            <span>Less</span>
-            <div class="legend-cell legend-level-0"></div>
-            <div class="legend-cell legend-level-1"></div>
-            <div class="legend-cell legend-level-2"></div>
-            <div class="legend-cell legend-level-3"></div>
-            <div class="legend-cell legend-level-4"></div>
-            <span>More</span>
+            <!-- Sort dropdown -->
+            <select class="dash-filter-select" id="dash-filter-sort" hx-get="{% url 'dashboard_courses_partial' %}"
+                hx-target="#course-list-container" hx-trigger="change" hx-swap="innerHTML transition:true"
+                hx-include="#dash-filter-chips input:checked, #dash-search-input" name="sort" aria-label="Sort courses">
+                <option value="recent">Most Recent</option>
+                <option value="progress_desc">Highest Progress</option>
+                <option value="progress_asc">Lowest Progress</option>
+                <option value="alphabetical">Alphabetical</option>
+            </select>
+            <span class="dash-filter-count" id="course-count">
+                {{ courses.count }} course{{ courses.count|pluralize }}
+            </span>
         </div>
     </section>
 
+    <!-- ===== WIDGET: COURSE CARDS GRID ===== -->
+    <section class="dash-widget" data-widget-id="course-grid">
+        <div class="dash-course-grid" id="course-list-container">
+            {% if courses %}
+            {% for course in courses %}
+            <div class="dash-course-card glass-card" id="course-card-{{ course.id }}">
+                <!-- Front face -->
+                <div class="dash-card-front">
+                    <div class="dash-card-thumb-wrapper">
+                        {% if course.thumbnail_url %}
+                        <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" class="dash-card-thumb"
+                            loading="lazy">
+                        {% else %}
+                        <div class="dash-card-thumb-placeholder" aria-hidden="true">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                            </svg>
+                        </div>
+                        {% endif %}
+                        {% if course.video_count > 0 and course.completed_video_count == course.video_count %}
+                        <span class="dash-badge-complete">✓ Complete</span>
+                        {% endif %}
+                    </div>
+                    <div class="dash-card-body">
+                        <div>
+                            <h3 class="dash-card-title">{{ course.title }}</h3>
+                            <div class="dash-card-meta">
+                                <span class="dash-meta-tag">🎥 {{ course.video_count }} videos</span>
+                                <span class="dash-meta-tag">⏱️ {{ course.total_duration_display }}</span>
+                                <span class="dash-meta-tag dash-meta-target">🎯 {{ course.target_days }}d plan</span>
+                            </div>
+                            <div class="dash-progress-section">
+                                <div class="dash-progress-header">
+                                    <span class="dash-progress-label">Progress</span>
+                                    <span
+                                        class="dash-progress-pct{% if course.video_count > 0 and course.completed_video_count == course.video_count %} dash-progress-done{% endif %}">
+                                        {% if course.video_count > 0 %}{% widthratio course.completed_video_count
+                                        course.video_count 100 %}{% else %}0{% endif %}%
+                                    </span>
+                                </div>
+                                <div class="dash-progress-bar" role="progressbar"
+                                    aria-valuenow="{% if course.video_count > 0 %}{% widthratio course.completed_video_count course.video_count 100 %}{% else %}0{% endif %}"
+                                    aria-valuemin="0" aria-valuemax="100" aria-label="Course progress">
+                                    <div class="dash-progress-fill{% if course.video_count > 0 and course.completed_video_count == course.video_count %} dash-progress-fill-done{% endif %}"
+                                        style="width: {% if course.video_count > 0 %}{% widthratio course.completed_video_count course.video_count 100 %}{% else %}0{% endif %}%;">
+                                    </div>
+                                </div>
+                                <div class="dash-progress-detail">
+                                    <span>{{ course.completed_video_count }}/{{ course.video_count }} videos
+                                        completed</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dash-card-actions">
+                            <a href="{% url 'learn_view' course.id %}" class="dash-btn-learn"
+                                aria-label="Continue learning {{ course.title }}">Continue Learning</a>
+                            {% if course.video_count > 0 and course.completed_video_count == course.video_count %}
+                            {% if course.passed_exam %}
+                            <a href="{% url 'certificate' course.id %}" class="dash-btn-cert"
+                                aria-label="View certificate for {{ course.title }}">🏅 Certificate</a>
+                            {% else %}
+                            <a href="{% url 'final_exam' course.id %}" class="dash-btn-exam"
+                                aria-label="Take final exam for {{ course.title }}">📝 Final Exam</a>
+                            {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <!-- Back face -->
+                <div class="dash-card-back">
+                    <div class="dash-card-back-content">
+                        <h3 class="dash-card-back-title">{{ course.title }}</h3>
+                        <div class="dash-card-back-stats">
+                            <div class="dash-back-stat">
+                                <span class="dash-back-stat-value">{{ course.video_count }}</span>
+                                <span class="dash-back-stat-label">Total Videos</span>
+                            </div>
+                            <div class="dash-back-stat">
+                                <span class="dash-back-stat-value">{{ course.completed_video_count }}</span>
+                                <span class="dash-back-stat-label">Completed</span>
+                            </div>
+                            <div class="dash-back-stat">
+                                <span class="dash-back-stat-value">{% if course.video_count > 0 %}{% widthratio
+                                    course.completed_video_count course.video_count 100 %}{% else %}0{% endif %}%</span>
+                                <span class="dash-back-stat-label">Completion</span>
+                            </div>
+                            <div class="dash-back-stat">
+                                <span class="dash-back-stat-value">{{ course.target_days }}</span>
+                                <span class="dash-back-stat-label">Target Days</span>
+                            </div>
+                        </div>
+                        <a href="{% url 'learn_view' course.id %}" class="dash-back-cta">Continue Learning →</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="dash-empty-state">
+                <div class="dash-empty-icon" aria-hidden="true">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                    </svg>
+                </div>
+                <h3>Your Study Desk is Empty</h3>
+                <p>Ready to lock into hyper-focus? Import any public YouTube playlist URL to transform it into a
+                    structured, distraction-free course.</p>
+                <a href="{% url 'import_course' %}" class="dash-btn-import">Import Your First Playlist</a>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- ===== WIDGET: 3D HEATMAP ===== -->
+    <section class="dash-widget" data-widget-id="heatmap" aria-label="Activity heatmap">
+        <div class="dash-heatmap-section-v4">
+            <div class="dash-widget-header-v4">
+                <span class="dash-widget-drag-handle" aria-hidden="true">⠿</span>
+                <h3 class="dash-widget-title">📅 Activity Heatmap</h3>
+                <div class="dash-heatmap-time-chips">
+                    <button class="dash-chip dash-chip-sm active" hx-get="{% url 'dashboard_heatmap_partial' %}?days=7"
+                        hx-target="#heatmap-grid" hx-swap="innerHTML" data-hm-days="7">7 Days</button>
+                    <button class="dash-chip dash-chip-sm" hx-get="{% url 'dashboard_heatmap_partial' %}?days=14"
+                        hx-target="#heatmap-grid" hx-swap="innerHTML" data-hm-days="14">14 Days</button>
+                    <button class="dash-chip dash-chip-sm" hx-get="{% url 'dashboard_heatmap_partial' %}?days=28"
+                        hx-target="#heatmap-grid" hx-swap="innerHTML" data-hm-days="28">28 Days</button>
+                </div>
+                <div class="dash-heatmap-score">
+                    {{ profile.streak_count }} <span>day streak</span>
+                </div>
+                <button class="dash-widget-collapse" aria-label="Collapse section"
+                    onclick="this.closest('.dash-widget').classList.toggle('collapsed')">−</button>
+            </div>
+            <div class="dash-widget-body">
+                <div class="dash-streak-grid-v4" id="heatmap-grid">
+                    {% for day in streak_grid %}
+                    <div class="dash-streak-cell-v4 level-{{ day.level }}" tabindex="0" role="img"
+                        aria-label="{{ day.label }}: {{ day.actions }} study event{{ day.actions|pluralize }}">
+                        <span class="dash-streak-tooltip">{{ day.actions }} event{{ day.actions|pluralize }} on {{
+                            day.label }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="dash-heatmap-legend">
+                    <span>Less</span>
+                    <div class="legend-cell legend-level-0"></div>
+                    <div class="legend-cell legend-level-1"></div>
+                    <div class="legend-cell legend-level-2"></div>
+                    <div class="legend-cell legend-level-3"></div>
+                    <div class="legend-cell legend-level-4"></div>
+                    <span>More</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div><!-- /dashboard-container -->
+
+<!-- ===== COMMAND PALETTE (Z-3) ===== -->
+<div class="dash-palette-overlay" id="command-palette" hidden role="dialog" aria-modal="true"
+    aria-label="Command palette">
+    <div class="dash-palette-modal">
+        <div class="dash-palette-search-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+            </svg>
+            <input type="text" class="dash-palette-input" id="palette-input"
+                placeholder="Search courses, navigate, or run commands..." autofocus
+                aria-label="Search or type a command">
+            <kbd class="dash-palette-kbd">ESC</kbd>
+        </div>
+        <div class="dash-palette-results" id="palette-results">
+            <div class="dash-palette-section">
+                <span class="dash-palette-section-title">Navigation</span>
+                <button class="dash-palette-item" data-action="navigate" data-url="{% url 'dashboard' %}"><span
+                        class="dash-palette-item-icon">📊</span> Go to Dashboard</button>
+                <button class="dash-palette-item" data-action="navigate" data-url="{% url 'import_course' %}"><span
+                        class="dash-palette-item-icon">📥</span> Import Playlist</button>
+                <button class="dash-palette-item" data-action="navigate" data-url="{% url 'focus_room' %}"><span
+                        class="dash-palette-item-icon">🎯</span> Focus Room</button>
+                <button class="dash-palette-item" data-action="navigate" data-url="{% url 'profile' %}"><span
+                        class="dash-palette-item-icon">👤</span> Profile</button>
+            </div>
+            <div class="dash-palette-section">
+                <span class="dash-palette-section-title">Commands</span>
+                <button class="dash-palette-item" data-action="theme"><span class="dash-palette-item-icon">🌓</span>
+                    Toggle Dark/Light Mode</button>
+            </div>
+            <div class="dash-palette-section" id="palette-courses-section">
+                <span class="dash-palette-section-title">Courses</span>
+                {% for c in courses %}
+                <button class="dash-palette-item palette-course-item" data-action="navigate"
+                    data-url="{% url 'learn_view' c.id %}" data-title="{{ c.title|lower }}">
+                    <span class="dash-palette-item-icon">📖</span> {{ c.title }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== FLOATING AI ASSISTANT (Z-3) ===== -->
+<div class="dash-ai-chat" id="ai-chat-widget" aria-label="AI Learning Assistant">
+    <button class="dash-ai-chat-fab" aria-label="Open AI Assistant" aria-expanded="false"
+        onclick="toggleAiChat()">🤖</button>
+    <div class="dash-ai-chat-panel" hidden id="ai-chat-panel">
+        <div class="dash-ai-chat-header">
+            <span>🤖 AI Learning Assistant</span>
+            <button class="dash-ai-chat-close" aria-label="Close AI Assistant" onclick="toggleAiChat()">×</button>
+        </div>
+        <div class="dash-ai-chat-messages" id="ai-chat-messages">
+            <div class="dash-ai-response">
+                <div class="dash-ai-response-text">👋 Hi! I'm your learning assistant. How can I help you today?</div>
+                <div class="dash-ai-suggestions">
+                    <button class="dash-ai-suggestion-chip" hx-post="{% url 'dashboard_ai_assist' %}"
+                        hx-target="#ai-chat-messages" hx-swap="beforeend"
+                        hx-vals='{"message": "Summarize my progress"}'>Summarize my progress</button>
+                    <button class="dash-ai-suggestion-chip" hx-post="{% url 'dashboard_ai_assist' %}"
+                        hx-target="#ai-chat-messages" hx-swap="beforeend"
+                        hx-vals='{"message": "Which course should I focus on?"}'>Which course should I focus
+                        on?</button>
+                    <button class="dash-ai-suggestion-chip" hx-post="{% url 'dashboard_ai_assist' %}"
+                        hx-target="#ai-chat-messages" hx-swap="beforeend"
+                        hx-vals='{"message": "What are my peak study hours?"}'>What are my peak study hours?</button>
+                </div>
+            </div>
+        </div>
+        <form class="dash-ai-chat-input-wrap" hx-post="{% url 'dashboard_ai_assist' %}" hx-target="#ai-chat-messages"
+            hx-swap="beforeend" hx-on::after-request="this.reset()">
+            <input type="text" class="dash-ai-chat-input" name="message" placeholder="Ask about your learning..."
+                aria-label="Type your message">
+            <button type="submit" class="dash-ai-chat-send" aria-label="Send message">→</button>
+        </form>
+    </div>
 </div>
 
 <!-- Toast Notification Container -->
@@ -271,81 +464,305 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- HTMX for dynamic filtering -->
+<!-- HTMX -->
 <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<!-- SortableJS for drag-and-drop widgets -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<!-- Canvas Confetti for celebrations -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // ===== STRIP HTMX params from sort/filter selects ====
-        const filterStatus = document.getElementById('dash-filter-status');
-        const filterSort = document.getElementById('dash-filter-sort');
+        /* ================================================================
+           PHASE 1: CANVAS PARTICLE SYSTEM
+           ================================================================ */
+        (function initParticles() {
+            const canvas = document.getElementById('dash-particle-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (prefersReduced || window.innerWidth < 768) { canvas.style.display = 'none'; return; }
 
-        if (filterStatus && filterSort) {
-            // When one changes, include the other's value in the request
-            filterStatus.addEventListener('change', function () {
-                const sortVal = filterSort.value;
-                const url = new URL(this.getAttribute('hx-get'), window.location.origin);
-                url.searchParams.set('filter', this.value);
-                url.searchParams.set('sort', sortVal);
-                this.setAttribute('hx-get', url.pathname + url.search);
+            let particles = [];
+            const PARTICLE_COUNT = 150;
+            const CONNECTION_DIST = 100;
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            class Particle {
+                constructor() {
+                    this.reset();
+                    this.y = Math.random() * canvas.height;
+                }
+                reset() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = -10;
+                    this.vx = (Math.random() - 0.5) * 0.3;
+                    this.vy = Math.random() * 0.3 + 0.15;
+                    this.radius = Math.random() * 1.8 + 0.4;
+                    this.opacity = Math.random() * 0.4 + 0.15;
+                    const colors = ['239,35,60', '139,92,246', '59,130,246', '16,185,129'];
+                    this.color = colors[Math.floor(Math.random() * colors.length)];
+                }
+                update(mx, my) {
+                    // Gentle cursor drift
+                    if (mx && my) {
+                        const dx = mx - this.x;
+                        const dy = my - this.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 150) {
+                            this.vx += (dx / dist) * 0.02;
+                            this.vy += (dy / dist) * 0.02;
+                        }
+                    }
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    if (this.y > canvas.height + 10) this.reset();
+                    if (this.x < -10) this.x = canvas.width + 10;
+                    if (this.x > canvas.width + 10) this.x = -10;
+                    // Damping
+                    this.vx *= 0.999;
+                    this.vy *= 0.999;
+                }
+                draw(ctx) {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${this.color},${this.opacity})`;
+                    ctx.fill();
+                }
+            }
+
+            for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
+
+            let mouseX = null, mouseY = null;
+            document.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // Update & draw particles
+                for (const p of particles) {
+                    p.update(mouseX, mouseY);
+                    p.draw(ctx);
+                }
+                // Connection lines
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < CONNECTION_DIST) {
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = `rgba(139,92,246,${0.08 * (1 - dist / CONNECTION_DIST)})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.stroke();
+                        }
+                    }
+                }
+                requestAnimationFrame(animate);
+            }
+            animate();
+        })();
+
+        /* ================================================================
+           PHASE 2: LIVE COUNTING ANIMATION FOR KPI VALUES
+           ================================================================ */
+        function animateCounter(el, target, duration, decimals) {
+            const start = 0;
+            const startTime = performance.now();
+            function update(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 4); // easeOutQuart
+                const val = start + (target - start) * eased;
+                el.textContent = decimals ? val.toFixed(decimals) : Math.floor(val);
+                if (progress < 1) requestAnimationFrame(update);
+                else el.textContent = target;
+            }
+            requestAnimationFrame(update);
+        }
+
+        document.querySelectorAll('.dash-kpi-value[data-count]').forEach(el => {
+            const target = parseFloat(el.getAttribute('data-count'));
+            const decimals = parseInt(el.getAttribute('data-decimals') || '0');
+            if (!isNaN(target) && target > 0) {
+                // Store original HTML structure for complex cases
+                const hasUnit = el.querySelector('.dash-kpi-unit');
+                if (hasUnit) {
+                    const unitSpan = el.querySelector('.dash-kpi-unit');
+                    animateCounter(el.childNodes[0] || el, target, 1200, decimals);
+                } else {
+                    animateCounter(el, target, 1000, decimals);
+                }
+            }
+        });
+
+        /* ================================================================
+           PHASE 3: COMMAND PALETTE (Ctrl+K / Cmd+K)
+           ================================================================ */
+        const paletteOverlay = document.getElementById('command-palette');
+        const paletteInput = document.getElementById('palette-input');
+        const paletteCoursesSection = document.getElementById('palette-courses-section');
+
+        function openPalette() {
+            paletteOverlay.hidden = false;
+            paletteInput.focus();
+            paletteInput.value = '';
+            filterPalette('');
+        }
+        function closePalette() {
+            paletteOverlay.hidden = true;
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                openPalette();
+            }
+            if (e.key === 'Escape' && !paletteOverlay.hidden) {
+                closePalette();
+            }
+        });
+
+        paletteOverlay.addEventListener('click', function (e) {
+            if (e.target === paletteOverlay) closePalette();
+        });
+
+        paletteInput.addEventListener('input', function () {
+            filterPalette(this.value.toLowerCase());
+        });
+
+        function filterPalette(query) {
+            const items = paletteOverlay.querySelectorAll('.dash-palette-item');
+            items.forEach(item => {
+                const text = (item.textContent || '').toLowerCase();
+                const title = item.getAttribute('data-title') || '';
+                if (!query || text.includes(query) || title.includes(query)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
             });
-
-            filterSort.addEventListener('change', function () {
-                const filterVal = filterStatus.value;
-                const url = new URL(this.getAttribute('hx-get'), window.location.origin);
-                url.searchParams.set('filter', filterVal);
-                url.searchParams.set('sort', this.value);
-                this.setAttribute('hx-get', url.pathname + url.search);
+            // Hide empty sections
+            paletteOverlay.querySelectorAll('.dash-palette-section').forEach(section => {
+                const visible = section.querySelectorAll('.dash-palette-item[style="display: none;"]').length;
+                const total = section.querySelectorAll('.dash-palette-item').length;
+                section.style.display = visible === total ? 'none' : '';
             });
         }
 
-        // ===== TOAST NOTIFICATION SYSTEM =====
+        paletteOverlay.addEventListener('click', function (e) {
+            const item = e.target.closest('.dash-palette-item');
+            if (!item) return;
+            const action = item.getAttribute('data-action');
+            if (action === 'navigate') {
+                window.location.href = item.getAttribute('data-url');
+            } else if (action === 'theme') {
+                const html = document.documentElement;
+                html.setAttribute('data-theme', html.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+                closePalette();
+            }
+        });
+
+        /* ================================================================
+           PHASE 3: FLOATING AI ASSISTANT
+           ================================================================ */
+        window.toggleAiChat = function () {
+            const panel = document.getElementById('ai-chat-panel');
+            const fab = document.querySelector('.dash-ai-chat-fab');
+            const isOpen = !panel.hidden;
+            panel.hidden = isOpen;
+            fab.setAttribute('aria-expanded', !isOpen);
+            if (!isOpen) {
+                // Scroll to bottom
+                const msgs = document.getElementById('ai-chat-messages');
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+        };
+
+        // Auto-scroll AI chat on new messages
+        document.body.addEventListener('htmx:afterSwap', function (evt) {
+            if (evt.detail.target.id === 'ai-chat-messages') {
+                evt.detail.target.scrollTop = evt.detail.target.scrollHeight;
+            }
+        });
+
+        /* ================================================================
+           PHASE 3: FACETED CHIP FILTERS
+           ================================================================ */
+        document.querySelector('.dash-filter-chips').addEventListener('click', function (e) {
+            const chip = e.target.closest('.dash-chip');
+            if (!chip) return;
+            // Deactivate all chips
+            this.querySelectorAll('.dash-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+        });
+
+        /* ================================================================
+           PHASE 4: HEATMAP TIME FILTER CHIPS
+           ================================================================ */
+        document.querySelector('.dash-heatmap-time-chips')?.addEventListener('click', function (e) {
+            const chip = e.target.closest('.dash-chip');
+            if (!chip) return;
+            this.querySelectorAll('.dash-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+        });
+
+        /* ================================================================
+           PHASE 4/5: TOAST NOTIFICATION SYSTEM (ENHANCED)
+           ================================================================ */
         window.showToast = function ({ message, type, action, actionUrl, duration }) {
             const container = document.getElementById('toast-container');
             if (!container) return;
 
             const toast = document.createElement('div');
-            toast.className = 'dash-toast toast-' + (type || 'info');
+            toast.className = 'dash-toast-v4 toast-' + (type || 'info');
             const icons = { warning: '⚠️', success: '✅', danger: '❌', info: 'ℹ️' };
 
             let actionHTML = '';
             if (action && actionUrl) {
-                actionHTML = `<a href="${actionUrl}" class="dash-toast-action">${action}</a>`;
+                actionHTML = `<a href="${actionUrl}" class="dash-toast-action-v4">${action}</a>`;
             }
 
             toast.innerHTML = `
-                <span class="dash-toast-icon" aria-hidden="true">${icons[type] || 'ℹ️'}</span>
-                <div class="dash-toast-body">
-                    <div class="dash-toast-message">${message}</div>
-                    ${actionHTML}
-                </div>
-                <button class="dash-toast-close" aria-label="Dismiss notification" onclick="this.closest('.dash-toast').remove()">&times;</button>
-            `;
+            <span class="dash-toast-icon-v4" aria-hidden="true">${icons[type] || 'ℹ️'}</span>
+            <div class="dash-toast-body-v4">
+                <div class="dash-toast-message-v4">${message}</div>
+                ${actionHTML}
+            </div>
+            <button class="dash-toast-close-v4" aria-label="Dismiss notification" onclick="this.closest('.dash-toast-v4').remove()">&times;</button>
+        `;
 
             container.appendChild(toast);
 
-            // Auto-dismiss after duration
+            // Auto-dismiss
             const dismissTime = duration || 6000;
             setTimeout(() => {
                 if (toast.parentNode) {
                     toast.classList.add('removing');
-                    setTimeout(() => {
-                        if (toast.parentNode) toast.remove();
-                    }, 250);
+                    setTimeout(() => { if (toast.parentNode) toast.remove(); }, 300);
                 }
             }, dismissTime);
+
+            // Confetti burst for success toasts
+            if (type === 'success' && typeof confetti !== 'undefined') {
+                confetti({ particleCount: 60, spread: 70, origin: { y: 0.9, x: 0.9 }, colors: ['#10b981', '#34d399', '#6ee7b7'] });
+            }
         };
 
-        // ===== STREAK-AT-RISK DETECTION =====
-        const streakCount = {{ profile.streak_count }
-    };
+        /* ================================================================
+           STREAK-AT-RISK DETECTION
+           ================================================================ */
+        const streakCount = {{ profile.streak_count }};
     const currentHour = new Date().getHours();
-
-    // Check if no activity today and it's past 8pm
     if (streakCount > 0 && currentHour >= 20) {
-        // The server already computed if the user has activity today
-        // We check the last element of streak_grid (today)
-        const streakCells = document.querySelectorAll('.dash-streak-cell');
+        const streakCells = document.querySelectorAll('.dash-streak-cell-v4');
         if (streakCells.length > 0) {
             const todayCell = streakCells[streakCells.length - 1];
             if (todayCell.classList.contains('level-0')) {
@@ -359,10 +776,67 @@
             }
         }
     }
+
+    /* ================================================================
+       PHASE 5: SORTABLEJS DRAG-AND-DROP WIDGETS
+       ================================================================ */
+    const widgetContainer = document.getElementById('widget-sortable');
+    if (widgetContainer && typeof Sortable !== 'undefined') {
+        new Sortable(widgetContainer, {
+            handle: '.dash-widget-drag-handle',
+            animation: 200,
+            ghostClass: 'dash-widget-ghost',
+            chosenClass: 'dash-widget-chosen',
+            dragClass: 'dash-widget-drag',
+            onEnd: function () {
+                // Save widget order to localStorage
+                const order = [];
+                widgetContainer.querySelectorAll('.dash-widget').forEach(w => {
+                    order.push(w.getAttribute('data-widget-id'));
+                });
+                try { localStorage.setItem('dash-widget-order', JSON.stringify(order)); } catch (e) { }
+            }
+        });
+
+        // Restore saved order
+        try {
+            const savedOrder = JSON.parse(localStorage.getItem('dash-widget-order'));
+            if (savedOrder && savedOrder.length > 0) {
+                savedOrder.forEach(id => {
+                    const el = widgetContainer.querySelector(`[data-widget-id="${id}"]`);
+                    if (el) widgetContainer.appendChild(el);
+                });
+            }
+        } catch (e) { }
+    }
+
+    /* ================================================================
+       PHASE 6: HTMX EVENT HANDLERS
+       ================================================================ */
+    document.body.addEventListener('htmx:afterSwap', function (evt) {
+        // Update course count
+        if (evt.detail.target.id === 'course-list-container') {
+            const courseCards = document.querySelectorAll('#course-list-container .dash-course-card');
+            const countSpan = document.getElementById('course-count');
+            if (countSpan && courseCards) {
+                countSpan.textContent = courseCards.length + ' course' + (courseCards.length !== 1 ? 's' : '');
+            }
+            // Re-animate KPI counters
+            document.querySelectorAll('.dash-kpi-value[data-count]').forEach(el => {
+                const target = parseFloat(el.getAttribute('data-count'));
+                if (!isNaN(target)) animateCounter(el, target, 800, 0);
+            });
+        }
+        // Re-initialize heatmap time chip click handling after swap
+        if (evt.detail.target.id === 'heatmap-grid') {
+            // Chip state is managed by the click handler above
+        }
     });
 
-    // ===== AUTO-DISMISS DJANGO MESSAGES =====
-    document.addEventListener('DOMContentLoaded', function () {
+    /* ================================================================
+       AUTO-DISMISS DJANGO MESSAGES
+       ================================================================ */
+    (function () {
         const djangoMessages = document.querySelectorAll('.fixed.top-24 .flex.items-center.justify-between');
         djangoMessages.forEach(function (msg) {
             setTimeout(function () {
@@ -372,16 +846,24 @@
                 setTimeout(function () { if (msg.parentNode) msg.remove(); }, 500);
             }, 5000);
         });
-    });
+    })();
 
-    // ===== HTMX: After swap, re-init any dynamic elements =====
-    document.body.addEventListener('htmx:afterSwap', function (evt) {
-        // Update course count in filter bar
-        const courseCards = document.querySelectorAll('#course-list-container .dash-course-card');
-        const countSpan = document.querySelector('.dash-filter-bar span[style*="margin-left:auto"]');
-        if (countSpan && evt.detail.target.id === 'course-list-container') {
-            countSpan.textContent = courseCards.length + ' course' + (courseCards.length !== 1 ? 's' : '');
-        }
+    /* ================================================================
+       PHASE 1: RIPPLE EFFECT ON BUTTONS
+       ================================================================ */
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.dash-btn-import, .dash-btn-learn, .dash-btn-cert, .dash-btn-exam, .dash-insight-cta, .dash-rec-cta');
+        if (!btn) return;
+        const ripple = document.createElement('span');
+        ripple.className = 'dash-ripple';
+        const rect = btn.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+        ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+        btn.appendChild(ripple);
+        ripple.addEventListener('animationend', function () { ripple.remove(); });
     });
+});
 </script>
 {% endblock %}

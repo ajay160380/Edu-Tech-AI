@@ -1,0 +1,13 @@
+<div class="dash-ai-response">
+    <div class="dash-ai-response-text">{{ response_text }}</div>
+    {% if suggestions %}
+    <div class="dash-ai-suggestions">
+        {% for s in suggestions %}
+        <button class="dash-ai-suggestion-chip" hx-post="{% url 'dashboard_ai_assist' %}" hx-target="#ai-chat-messages"
+            hx-swap="beforeend" hx-vals='{"message": "{{ s|escapejs }}"}'>
+            {{ s }}
+        </button>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>

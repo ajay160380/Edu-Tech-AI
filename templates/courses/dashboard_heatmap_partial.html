@@ -1,0 +1,6 @@
+{% for day in streak_grid %}
+<div class="dash-streak-cell level-{{ day.level }}" tabindex="0" role="img"
+    aria-label="{{ day.label }}: {{ day.actions }} study event{{ day.actions|pluralize }}">
+    <span class="dash-streak-tooltip">{{ day.actions }} event{{ day.actions|pluralize }} on {{ day.label }}</span>
+</div>
+{% endfor %}

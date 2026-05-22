@@ -20,6 +20,8 @@ urlpatterns = [
     # Dashboard & course actions
     path('dashboard/', views.dashboard, name='dashboard'),
     path('dashboard/courses/', views.dashboard_courses_partial, name='dashboard_courses_partial'),
+    path('dashboard/ai-assist/', views.dashboard_ai_assist, name='dashboard_ai_assist'),
+    path('dashboard/heatmap/', views.dashboard_heatmap_partial, name='dashboard_heatmap_partial'),
     path('focus/', views.focus_room, name='focus_room'),
     path('import/', views.import_course, name='import_course'),
     path('course/<int:course_id>/learn/', views.learn_view, name='learn_view'),

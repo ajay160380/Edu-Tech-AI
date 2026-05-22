@@ -378,9 +378,12 @@ def dashboard(request):
             'actions': total_actions,
         })
 
-    # ---- Contextual Insight Engine ----
+    # ---- Contextual Insight Engine (Enhanced V4 — 8 insight types) ----
     insight = None
     today_date = datetime.date.today()
+    activity_today = bool(progress_lookup.get(today_date, 0) or session_lookup.get(today_date, 0))
+
+    # 1. Empty state
     if total_courses == 0:
         insight = {
             'type': 'action',
@@ -390,6 +393,7 @@ def dashboard(request):
             'cta_url': '/import/',
             'cta_label': 'Import Playlist',
         }
+    # 2. Streak lost
     elif profile.streak_count == 0 and profile.last_active_date and (today_date - profile.last_active_date).days >= 2:
         days_since = (today_date - profile.last_active_date).days
         insight = {
@@ -400,7 +404,8 @@ def dashboard(request):
             'cta_url': '/focus/',
             'cta_label': 'Quick Focus Session',
         }
-    elif profile.streak_count > 0 and not (progress_lookup.get(today_date, 0) or session_lookup.get(today_date, 0)):
+    # 3. Streak at risk
+    elif profile.streak_count > 0 and not activity_today:
         insight = {
             'type': 'warning',
             'icon': '🌙',
@@ -409,8 +414,92 @@ def dashboard(request):
             'cta_url': '/focus/',
             'cta_label': '5-Min Session',
         }
-    elif completed_courses > 0:
-        # Check for courses ready for exam
+    # 4. Streak prediction — on track for milestone
+    elif profile.streak_count > 0 and activity_today:
+        next_milestone = 7
+        while next_milestone <= profile.streak_count:
+            next_milestone += 7
+        days_until = next_milestone - profile.streak_count
+        if days_until <= 5 and days_until > 0:
+            insight = {
+                'type': 'prediction',
+                'icon': '🔮',
+                'title': f'{next_milestone}-Day Streak Incoming!',
+                'message': f'Keep your rhythm — you\'re just {days_until} day{"s" if days_until > 1 else ""} away from a {next_milestone}-day streak milestone.',
+                'cta_url': '/focus/',
+                'cta_label': 'Sustain It',
+            }
+    # 5. Pace analysis — ETA for course completion
+    if not insight:
+        in_progress = [c for c in courses if c.video_count > 0 and c.completed_video_count < c.video_count]
+        if in_progress:
+            # Calculate average videos per day over last 7 days
+            total_actions_past_week = sum(
+                progress_lookup.get(today_date - datetime.timedelta(days=i), 0) +
+                session_lookup.get(today_date - datetime.timedelta(days=i), 0)
+                for i in range(7)
+            )
+            avg_daily = max(total_actions_past_week / 7, 0.3)
+            best_course = min(in_progress, key=lambda c: (c.video_count - c.completed_video_count) / avg_daily if avg_daily > 0 else float('inf'))
+            remaining = max(best_course.video_count - best_course.completed_video_count, 0)
+            eta_days = int(remaining / avg_daily) if avg_daily > 0 else 0
+            if eta_days > 0 and eta_days <= 30:
+                insight = {
+                    'type': 'pace',
+                    'icon': '📊',
+                    'title': 'Completion Forecast',
+                    'message': f'At your current pace (~{avg_daily:.1f} videos/day), you\'ll finish "{best_course.title}" in about {eta_days} day{"s" if eta_days > 1 else ""}.',
+                    'cta_url': f'/course/{best_course.id}/learn/',
+                    'cta_label': 'Speed Up',
+                }
+    # 6. Comparison nudge — better than last week
+    if not insight and weekly_sessions > 0:
+        two_weeks_ago = week_ago - datetime.timedelta(days=7)
+        prev_week = StudySession.objects.filter(
+            user=user,
+            completed_date__gte=two_weeks_ago,
+            completed_date__lt=week_ago
+        ).aggregate(total=Sum('duration_minutes'))['total'] or 0
+        if weekly_sessions > prev_week > 0:
+            pct_increase = int(((weekly_sessions - prev_week) / prev_week) * 100)
+            if pct_increase >= 20:
+                insight = {
+                    'type': 'comparison',
+                    'icon': '📈',
+                    'title': 'Growth Spurt!',
+                    'message': f'You studied {pct_increase}% more this week than last week. That momentum is powerful — don\'t let it slip!',
+                    'cta_url': None,
+                    'cta_label': None,
+                }
+    # 7. Time of day recommendation
+    if not insight and total_courses > 0:
+        # Find peak study hour from last 30 days
+        thirty_days_ago = today_date - datetime.timedelta(days=30)
+        recent_sessions = StudySession.objects.filter(
+            user=user, completed_date__gte=thirty_days_ago
+        ).values_list('completed_at', flat=True)
+        if len(recent_sessions) >= 3:
+            hour_counts = {}
+            for dt in recent_sessions:
+                h = dt.hour if hasattr(dt, 'hour') else (dt.hour if isinstance(dt, datetime.datetime) else 12)
+                if hasattr(dt, 'hour'):
+                    h = dt.hour
+                else:
+                    h = 12
+                hour_counts[h] = hour_counts.get(h, 0) + 1
+            if hour_counts:
+                peak_hour = max(hour_counts, key=hour_counts.get)
+                peak_label = f'{peak_hour}:00' if peak_hour <= 12 else f'{peak_hour - 12}:00 PM' if peak_hour < 24 else '12:00 AM'
+                insight = {
+                    'type': 'info',
+                    'icon': '⏳',
+                    'title': 'Your Peak Focus Zone',
+                    'message': f'Your most productive study hours are around {peak_label}. Block this time tomorrow for deep learning.',
+                    'cta_url': '/focus/',
+                    'cta_label': 'Focus Room',
+                }
+    # 8. Exam available (fallback if nothing else matched)
+    if not insight and completed_courses > 0:
         exam_ready = [c for c in courses if c.video_count > 0 and c.completed_video_count == c.video_count and not c.passed_exam]
         if exam_ready:
             c = exam_ready[0]
@@ -422,6 +511,42 @@ def dashboard(request):
                 'cta_url': f'/course/{c.id}/final-exam/',
                 'cta_label': 'Take Exam',
             }
+    # Fallback: neutral encouragement
+    if not insight:
+        insight = {
+            'type': 'action',
+            'icon': '💪',
+            'title': 'Stay Consistent',
+            'message': 'Every learning session builds lasting knowledge. Pick a course and make progress today!',
+            'cta_url': None,
+            'cta_label': None,
+        }
+
+    # ---- Predictive Course Recommendations (scoring algorithm) ----
+    recommended_courses = []
+    if total_courses > 0:
+        scored = []
+        for c in courses:
+            score = 0
+            # Recently started (< 3 days ago)
+            days_since_created = (today_date - c.created_at.date()).days
+            if days_since_created <= 3:
+                score += 3
+            # Near completion (>80%)
+            if c.video_count > 0 and c.completed_video_count / c.video_count >= 0.80 and c.completed_video_count < c.video_count:
+                score += 5
+            # High priority (target_days is tight)
+            if c.target_days > 0 and c.video_count > 0:
+                needed_per_day = (c.video_count - c.completed_video_count) / max(c.target_days - max(days_since_created, 0), 1)
+                if needed_per_day > 2:
+                    score += 4
+            # Exam-ready but not attempted
+            if c.video_count > 0 and c.completed_video_count == c.video_count and not c.passed_exam:
+                score += 6
+            if score > 0:
+                scored.append((c, score))
+        scored.sort(key=lambda x: x[1], reverse=True)
+        recommended_courses = [s[0] for s in scored[:3]]
 
     # ---- Last updated timestamp ----
     last_updated = timezone.now()
@@ -439,6 +564,8 @@ def dashboard(request):
         'weekly_goal_pct': weekly_goal_pct,
         'sparkline_data': sparkline_data,
         'insight': insight,
+        'recommended_courses': recommended_courses,
+        'activity_today': activity_today,
         'last_updated': last_updated,
     }
     return render(request, 'courses/dashboard.html', context)
@@ -453,6 +580,7 @@ def dashboard_courses_partial(request):
 
     sort = request.GET.get('sort', 'recent')
     filter_status = request.GET.get('filter', 'all')
+    search = request.GET.get('search', '').strip()
     user = request.user
 
     courses = Course.objects.filter(user=user).annotate(
@@ -462,6 +590,10 @@ def dashboard_courses_partial(request):
             filter=Q(videos__progress__user=user) & Q(videos__progress__is_completed=True)
         ),
     )
+
+    # Search (case-insensitive title match)
+    if search:
+        courses = [c for c in courses if search.lower() in c.title.lower()]
 
     # Filter
     if filter_status == 'in_progress':
@@ -482,6 +614,106 @@ def dashboard_courses_partial(request):
 
     context = {'courses': courses, 'user': user}
     return render(request, 'courses/dashboard_courses_partial.html', context)
+
+
+@login_required
+def dashboard_ai_assist(request):
+    from django.db.models import Count, Q, Sum
+    from django.utils import timezone
+    import datetime
+    user = request.user
+    profile = user.profile
+    message = request.POST.get('message', '').strip().lower()
+    total_courses = Course.objects.filter(user=user).count()
+    week_ago = timezone.now().date() - datetime.timedelta(days=7)
+    weekly_mins = StudySession.objects.filter(user=user, completed_date__gte=week_ago).aggregate(total=Sum('duration_minutes'))['total'] or 0
+    in_progress = Course.objects.filter(user=user).annotate(video_count=Count('videos'), completed_video_count=Count('videos', filter=Q(videos__progress__user=user) & Q(videos__progress__is_completed=True)))
+    in_progress = [c for c in in_progress if c.video_count > 0 and c.completed_video_count < c.video_count]
+    response_text = ''
+    suggestions = []
+    if 'progress' in message or 'summarize' in message or 'summary' in message:
+        if total_courses == 0:
+            response_text = "You haven't started any courses yet. Import a YouTube playlist to begin!"
+            suggestions = ['How do I import a course?', 'What can I learn here?']
+        else:
+            all_courses = Course.objects.filter(user=user).annotate(vc=Count('videos'), cvc=Count('videos', filter=Q(videos__progress__user=user, videos__progress__is_completed=True)))
+            completed = sum(1 for c in all_courses if c.vc > 0 and c.cvc == c.vc)
+            response_text = f"📊 Weekly summary: {weekly_mins} min studied across {total_courses} course(s). {completed} completed. "
+            if in_progress:
+                response_text += f"{len(in_progress)} in progress."
+            if profile.streak_count > 0:
+                response_text += f" {profile.streak_count}-day streak! 🔥"
+            suggestions = ['Which course should I focus on?', "What's my strongest subject?"]
+    elif 'focus' in message or 'which course' in message or 'recommend' in message:
+        if in_progress:
+            best = max(in_progress, key=lambda c: c.completed_video_count / max(c.video_count, 1))
+            pct = int((best.completed_video_count / max(best.video_count, 1)) * 100)
+            response_text = f"🎯 Focus on \"{best.title}\" — you're {pct}% through!"
+            suggestions = ['Summarize my progress', 'What are my peak study hours?']
+        elif total_courses == 0:
+            response_text = "No courses yet. Start by importing a YouTube playlist!"
+            suggestions = ['How do I import a course?']
+        else:
+            response_text = "All courses completed! Take exams to earn certificates, or import new playlists."
+            suggestions = ['Summarize my progress', 'Show me exam-ready courses']
+    elif 'peak' in message or 'best time' in message or 'when should' in message:
+        thirty_days_ago = timezone.now().date() - datetime.timedelta(days=30)
+        recent = StudySession.objects.filter(user=user, completed_date__gte=thirty_days_ago).values_list('completed_at', flat=True)
+        if len(recent) >= 3:
+            hour_counts = {}
+            for dt in recent:
+                h = dt.hour if hasattr(dt, 'hour') else 12
+                hour_counts[h] = hour_counts.get(h, 0) + 1
+            peak = max(hour_counts, key=hour_counts.get)
+            peak_label = f'{peak}:00' if peak <= 12 else f'{peak - 12}:00 PM'
+            response_text = f"⏰ Your peak focus hours are around {peak_label}. Schedule sessions then for max productivity!"
+        else:
+            response_text = "I need more study data to determine your peak hours. Complete a few more sessions!"
+        suggestions = ['Summarize my progress', 'Which course should I focus on?']
+    elif 'strongest' in message or 'subject' in message:
+        all_courses = Course.objects.filter(user=user).annotate(vc=Count('videos'), cvc=Count('videos', filter=Q(videos__progress__user=user, videos__progress__is_completed=True)))
+        best_course = max(all_courses, key=lambda c: (c.cvc / max(c.vc, 1)) if c.vc > 0 else 0, default=None)
+        if best_course and best_course.vc > 0 and best_course.cvc > 0:
+            pct = int((best_course.cvc / max(best_course.vc, 1)) * 100)
+            response_text = f"🏆 Strongest: \"{best_course.title}\" at {pct}% completion!"
+        else:
+            response_text = "Start learning to build strengths! Every video builds expertise."
+        suggestions = ['Which course should I focus on?', 'Summarize my progress']
+    else:
+        response_text = f"👋 Hi! You have {total_courses} course(s), {profile.streak_count}-day streak. "
+        if weekly_mins > 0:
+            response_text += f"{weekly_mins} min this week. "
+        response_text += "How can I help?"
+        suggestions = ['Summarize my progress', 'Which course should I focus on?', 'What are my peak study hours?']
+    return render(request, 'courses/dashboard_ai_response.html', {'response_text': response_text, 'suggestions': suggestions})
+
+
+@login_required
+def dashboard_heatmap_partial(request):
+    from django.utils import timezone
+    import datetime
+    from django.db.models import Count
+    days = int(request.GET.get('days', 28))
+    days = min(max(days, 7), 28)
+    user = request.user
+    today = datetime.date.today()
+    heatmap_start = today - datetime.timedelta(days=days - 1)
+    progress_dates = Progress.objects.filter(user=user, completed_at__date__gte=heatmap_start).values('completed_at__date').annotate(count=Count('id'))
+    session_dates = StudySession.objects.filter(user=user, completed_date__gte=heatmap_start).values('completed_date').annotate(count=Count('id'))
+    progress_lookup = {p['completed_at__date']: p['count'] for p in progress_dates}
+    session_lookup = {s['completed_date']: s['count'] for s in session_dates}
+    streak_grid = []
+    for i in range(days - 1, -1, -1):
+        day = today - datetime.timedelta(days=i)
+        total_actions = progress_lookup.get(day, 0) + session_lookup.get(day, 0)
+        if total_actions == 0: level = 0
+        elif total_actions <= 2: level = 1
+        elif total_actions <= 5: level = 2
+        elif total_actions <= 8: level = 3
+        else: level = 4
+        streak_grid.append({'date': day.strftime('%Y-%m-%d'), 'day_name': day.strftime('%a'), 'label': day.strftime('%b %d'), 'level': level, 'actions': total_actions})
+    return render(request, 'courses/dashboard_heatmap_partial.html', {'streak_grid': streak_grid, 'days': days})
+
 
 @login_required
 def import_course(request):

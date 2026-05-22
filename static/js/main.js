@@ -2,6 +2,111 @@
    EduTech AI - Zen Mode Interactive Logic
    ========================================================================== */
 
+/* ==========================================================================
+   THEME TRANSITION SYSTEM — Curtain Rise / Curtain Fall
+   Orchestrates the magical switch between light (logged in) and dark (logged out)
+   ========================================================================== */
+
+(function initThemeSystem() {
+    const html = document.documentElement;
+    const lightCurtain = document.getElementById('light-curtain');
+    const darkCurtain = document.getElementById('dark-curtain');
+    const transitionIcon = document.getElementById('theme-transition-icon');
+    const iconSun = document.getElementById('theme-icon-sun');
+    const iconMoon = document.getElementById('theme-icon-moon');
+
+    // Determine correct theme from the server-rendered data-theme attribute
+    const currentTheme = html.getAttribute('data-theme') || 'dark';
+    window.__THEME_STATE__ = currentTheme;
+
+    /**
+     * Perform a curtain-based theme switch.
+     * @param {'light'|'dark'} targetTheme
+     */
+    window.switchTheme = function (targetTheme) {
+        if (window.__THEME_STATE__ === targetTheme) return;
+        const prevTheme = window.__THEME_STATE__;
+        window.__THEME_STATE__ = targetTheme;
+        window.__THEME_SWITCHING__ = true;
+
+        // Show the appropriate curtain
+        const curtain = targetTheme === 'light' ? lightCurtain : darkCurtain;
+        const icon = targetTheme === 'light' ? iconSun : iconMoon;
+
+        // Show curtain (curtain rises / falls over the screen)
+        if (curtain) {
+            curtain.classList.remove('closing');
+            curtain.classList.add('active');
+        }
+
+        // Show transition icon
+        if (transitionIcon && icon) {
+            iconSun.style.display = targetTheme === 'light' ? 'block' : 'none';
+            iconMoon.style.display = targetTheme === 'dark' ? 'block' : 'none';
+            transitionIcon.classList.add('show');
+        }
+
+        // Switch the data-theme attribute mid-curtain (at peak coverage)
+        setTimeout(() => {
+            html.classList.add('theme-transitioning');
+            html.setAttribute('data-theme', targetTheme);
+
+            // Animate transition icon out
+            if (transitionIcon) {
+                transitionIcon.classList.remove('show');
+            }
+
+            // Begin closing the curtain (reveal the new theme beneath)
+            if (curtain) {
+                curtain.classList.add('closing');
+                curtain.classList.remove('active');
+            }
+
+            // Dispatch event for other components to react
+            window.dispatchEvent(new CustomEvent('themeChanged', {
+                detail: { theme: targetTheme, previous: prevTheme }
+            }));
+
+            // Clean up after animations complete
+            setTimeout(() => {
+                if (curtain) {
+                    curtain.classList.remove('closing');
+                }
+                html.classList.remove('theme-transitioning');
+                window.__THEME_SWITCHING__ = false;
+
+                // Re-initialize WebGL backgrounds if present
+                if (window.__lightRaysInstance__ && window.__lightRaysInstance__.updateOptions) {
+                    window.__lightRaysInstance__.updateOptions({
+                        theme: targetTheme
+                    });
+                }
+            }, 600);
+        }, 350);
+    };
+
+    /**
+     * Watch for auth state changes (login/logout) via page transitions.
+     * The server sets data-theme on initial render; JS handles SPA-like transitions.
+     */
+    // Expose current state for other scripts
+    window.getCurrentTheme = function () { return window.__THEME_STATE__; };
+    window.isThemeSwitching = function () { return !!window.__THEME_SWITCHING__; };
+
+    // If the page loads with light theme, ensure smooth initial state
+    if (currentTheme === 'light') {
+        html.classList.add('theme-transitioning');
+        requestAnimationFrame(() => {
+            // Small delay to let CSS catch up, then remove transition class
+            setTimeout(() => {
+                html.classList.remove('theme-transitioning');
+            }, 100);
+        });
+    }
+
+    console.log(`[ThemeSystem] Initialized with theme: ${currentTheme}`);
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
     // Determine current view context
     const isLearnView = document.querySelector('.zen-layout') !== null;
@@ -17,6 +122,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Auto-dismiss alert notifications
     initAlerts();
+
+    // Scroll-triggered reveal animations (About page)
+    initScrollReveal();
+
+    // Timeline node pulse animation on scroll
+    initTimelinePulse();
 });
 
 /**
@@ -411,7 +522,7 @@ function showToast(message, type = 'success') {
     }, 4000);
 }
 
-(function() {
+(function () {
 
     // Mesmerizing High-Performance WebGL2 Plasma Engine Class
     class Plasma {
@@ -436,7 +547,7 @@ function showToast(message, type = 'success') {
 
             this.t0 = performance.now();
             this.isPaused = false;
-            
+
             this.init();
         }
 
@@ -577,8 +688,8 @@ function showToast(message, type = 'success') {
             // Full-screen triangle buffer setup
             const positions = new Float32Array([
                 -1.0, -1.0,
-                 3.0, -1.0,
-                -1.0,  3.0
+                3.0, -1.0,
+                -1.0, 3.0
             ]);
 
             const vao = this.gl.createVertexArray();
@@ -609,13 +720,13 @@ function showToast(message, type = 'success') {
             // Bind Event Listeners
             this._onResize = this.onResize.bind(this);
             window.addEventListener('resize', this._onResize);
-            
+
             // Modern ResizeObserver to handle layout rendering delays robustly
             if (window.ResizeObserver) {
                 this.resizeObserver = new ResizeObserver(() => this.onResize());
                 this.resizeObserver.observe(this.container);
             }
-            
+
             this.onResize();
 
             // Set static / initial uniforms
@@ -681,14 +792,14 @@ function showToast(message, type = 'success') {
             const dpr = Math.min(window.devicePixelRatio || 1, 2);
             this.canvas.width = width * dpr;
             this.canvas.height = height * dpr;
-            
+
             this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
             this.gl.uniform2f(this.uniforms.iResolution, this.canvas.width, this.canvas.height);
         }
 
         loop(t) {
             this.animationId = requestAnimationFrame(this.loop.bind(this));
-            
+
             if (this.isPaused) return;
 
             // Easing the mouse position
@@ -705,8 +816,8 @@ function showToast(message, type = 'success') {
             if (this.direction === 'pingpong') {
                 const pingpongDuration = 10;
                 const segmentTime = timeValue % (pingpongDuration * 2);
-                const pingpongTime = segmentTime > pingpongDuration 
-                    ? (pingpongDuration * 2 - segmentTime) 
+                const pingpongTime = segmentTime > pingpongDuration
+                    ? (pingpongDuration * 2 - segmentTime)
                     : segmentTime;
                 this.gl.uniform1f(this.uniforms.iTime, pingpongTime);
             } else {
@@ -943,8 +1054,8 @@ function showToast(message, type = 'success') {
             // Full-screen triangle buffer setup
             const positions = new Float32Array([
                 -1.0, -1.0,
-                 3.0, -1.0,
-                -1.0,  3.0
+                3.0, -1.0,
+                -1.0, 3.0
             ]);
 
             const vao = this.gl.createVertexArray();
@@ -980,12 +1091,12 @@ function showToast(message, type = 'success') {
             // Bind Event Listeners
             this._onResize = this.onResize.bind(this);
             window.addEventListener('resize', this._onResize);
-            
+
             if (window.ResizeObserver) {
                 this.resizeObserver = new ResizeObserver(() => this.onResize());
                 this.resizeObserver.observe(this.container);
             }
-            
+
             this.onResize();
 
             // Initial uniform values setup
@@ -1036,7 +1147,7 @@ function showToast(message, type = 'success') {
 
             this.canvas.width = w;
             this.canvas.height = h;
-            
+
             this.gl.viewport(0, 0, w, h);
             this.gl.uniform2f(this.uniforms.iResolution, w, h);
 
@@ -1096,7 +1207,7 @@ function showToast(message, type = 'success') {
 
         loop(t) {
             this.animationId = requestAnimationFrame(this.loop.bind(this));
-            
+
             if (this.isPaused) return;
 
             if (this.followMouse && this.mouseInfluence > 0.0) {
@@ -1133,7 +1244,7 @@ function showToast(message, type = 'success') {
     window.LightRays = LightRays;
 
     // Export globally to hook up on dynamic additions if needed
-    window.initializeJellyButtons = function() {
+    window.initializeJellyButtons = function () {
         // Jelly buttons removed
     };
 
@@ -1141,5 +1252,65 @@ function showToast(message, type = 'success') {
     document.addEventListener('DOMContentLoaded', () => {
         // Jelly buttons auto-boot removed
     });
+
+    /**
+     * Scroll-triggered reveal animations (Intersection Observer)
+     * Used on the About page "What Makes Us Unique" timeline section
+     */
+    function initScrollReveal() {
+        const revealElements = document.querySelectorAll('.reveal-on-scroll');
+        if (!revealElements.length) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Stagger the reveal within each timeline row
+                    const cards = entry.target.querySelectorAll('.unique-card');
+                    entry.target.classList.add('revealed');
+
+                    // If there are nested cards, add staggered reveal
+                    cards.forEach((card, index) => {
+                        card.style.transitionDelay = `${index * 0.1}s`;
+                    });
+
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.15,
+            rootMargin: '0px 0px -50px 0px'
+        });
+
+        revealElements.forEach(el => observer.observe(el));
+    }
+
+    /**
+     * Timeline node pulse — intensifies glow when the section is in viewport
+     */
+    function initTimelinePulse() {
+        const section = document.getElementById('unique-section');
+        if (!section) return;
+
+        const nodes = section.querySelectorAll('.rounded-full');
+        if (!nodes.length) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                nodes.forEach(node => {
+                    if (entry.isIntersecting) {
+                        node.style.animationPlayState = 'running';
+                    } else {
+                        node.style.animationPlayState = 'paused';
+                    }
+                });
+            });
+        }, { threshold: 0.1 });
+
+        observer.observe(section);
+    }
+
+    // Export for external use
+    window.initScrollReveal = initScrollReveal;
+    window.initTimelinePulse = initTimelinePulse;
 })();
 

@@ -521,6 +521,7 @@
 
             <div class="award-statement">This professional credential is proudly conferred upon</div>
 
+            <!-- Recipient name block: falls back dynamically to the course verified graduate user object (cert_user) or requesting user -->
             <div class="recipient-name">
                 {% if cert_user %}
                     {{ cert_user.first_name }} {{ cert_user.last_name|default:"" }}

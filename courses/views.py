@@ -1699,6 +1699,15 @@ def verify_certificate_view(request, credential_id):
     """
     Publicly verifies and renders a Certificate of Mastery by its Credential ID.
     Does NOT require user authentication. Shows a premium sign-up CTA for guests.
+
+    Lookup Mechanism:
+    - Cleans the raw incoming credential ID parameter.
+    - Queries all courses where exam has been passed (passed_exam=True).
+    - Iterates over matched records to verify completion percentage matches 100%.
+    - Re-hashes dynamically: hashlib.md5("CERT-FOCUSTUBE-{course_id}-{user_id}")
+    - Compares MD5 hashes to identify the correct course/user record securely.
+    - If valid, renders the A4 landscape certificate context for guests/public.
+    - If invalid, routes seamlessly to a custom glassmorphic warning error page.
     """
     clean_id = credential_id.replace('-', '').upper().strip()
     if len(clean_id) > 12:

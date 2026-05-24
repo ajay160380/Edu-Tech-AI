@@ -11,7 +11,7 @@ EduTech AI is a premium, high-fidelity EdTech SaaS platform built with Python (D
 *   **🗣️ Conversational Hinglish Tutor**: Features a smart translation module that converts complex educational concepts into warm, natural, and highly engaging Hinglish (Hindi written in Roman script) for easy understanding.
 *   **⏱️ AI Focus Room**: A distraction-free Pomodoro study portal where users can select their active course, set structured study times, and log session durations to maintain high learning streaks.
 *   **✍️ Dynamic Quiz & Final Exam Module**: Features a comprehensive final exam with strict timers, automatic instant grading, cooling-off rules to prevent spamming, and dynamic progress validation.
-*   **📜 Dynamic Digital Certificates**: Upon passing the final exam, the platform dynamically generates elegant, custom graduation certificates with personalized completion details and verification IDs.
+*   **📜 Dynamic Digital Certificates & Public Verification**: Upon passing the final exam, the platform dynamically generates elegant, custom graduation certificates with personalized completion details and verification IDs. It features a fully public verification gateway (`/certificate/verify/<credential_id>/`) with guest sign-up banners and shareable links for LinkedIn.
 *   **💳 Tier Subscription & Billing (Razorpay)**: Integrates three pricing tiers (`Free`, `Pro`, `Ultra`) connected directly to a sandbox Razorpay billing gateway with dynamic modal generation and callback signature verification.
 *   **🔐 Firebase Authentication**: Seamless authentication using Email/Credentials combined with Firebase Google Popup Authentication for security and rapid login.
 

@@ -602,6 +602,7 @@
             certName = "{{ request.user.username }}";
         {% endif %}
 
+        // Configure html2pdf parameters (Generates 300DPI high-resolution verified A4 landscape print PDF with CORS support active)
         const element = document.querySelector('.cert-frame');
         const opt = {
             margin: 0,
